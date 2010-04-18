@@ -13,9 +13,9 @@
 (defn seek-end [datacentermap x y]
   (let [paths (for [dx [(dec x) x (inc x)] dy [(dec y) y (inc y)]
                    :when (and
-                            (not (and (= dx x) (= dy y)))
-                            (not (neg? dx))
-                            (not (neg? dy))
+                            (not (and (= dx x) (= dy y))) ; don't move onto the cell we already are on
+                            (not (neg? dx)) ; don't move onto cells off the grid
+                            (not (neg? dy)) ; ditto
                             (= 0 (datacentermap [dx dy]))) ; only move to cells with a 0
                    ]
                 [dx dy])]                           
