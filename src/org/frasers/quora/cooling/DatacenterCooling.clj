@@ -9,6 +9,8 @@
 (def h 3)
 (def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
 
+(def counter (atom 0))
+
 (defn above [x y]
   ; I could probably remove the pos check or else to make this consistent check for overflow too
   (if (pos? y)
@@ -16,52 +18,41 @@
   )
 
 (defn below [x y]
-  [x (inc y)]
+  (if (< y (dec h))
+    [x (inc y)])
   )
 
 (defn left [x y]
   (if (pos? x)
-  [(dec x) y])
+    [(dec x) y])
   )
 
 (defn right [x y]
-  [(inc x) y]
+  (if (< x (dec w))
+    [(inc x) y])
   )
 
 
-(defn seek-end [datacentermap x y]
-  (let [paths (for [step [left right above below]
-                :when (= 0 (datacentermap (step x y)))]
-                (step x y))]
-    ; I AM HERE - this is getting the right paths - need to map these into agents
-    (prn datacentermap)
-    (prn paths)
-
-    ; Step 1 - see where we are... are we done?
-    ; Step 2 - loop through all the paths and kick off a new agent for each one
-    ; Step 3 - could we just recur for one of the branches to avoid creating too many agents?
-  ))
-
-
-(defn seek-end-old [datacentermap x y]
-  (let [paths (for [dx [(dec x) x (inc x)] dy [(dec y) y (inc y)]
-                   :when (and
-                            (not (and (= dx x) (= dy y))) ; don't move onto the cell we already are on
-                            (not (neg? dx)) ; don't move onto cells off the grid
-                            (not (neg? dy)) ; ditto
-                            ; I AM HERE ELIMINATE DIAGONAL MOVEMENT
-                            (= 0 (datacentermap [dx dy]))) ; only move to cells with a 0
-                   ]
-                [dx dy])]                           
-    ; I AM HERE - this is getting the right paths - need to map these into agents
-    (prn datacentermap)
-    (prn paths)
-
-    ; Step 1 - see where we are... are we done?
-    ; Step 2 - loop through all the paths and kick off a new agent for each one
-    ; Step 3 - could we just recur for one of the branches to avoid creating too many agents?
-    )
+(defn seek-end [datacentermap [x y] bc]
+  (println (format "loc: %d %d" x y))
+  (prn "bc = " bc)
+  (if (= 3 (datacentermap [x y])) ; see if we are at the end
+    (if (not (some zero? (vals datacentermap))) ; make sure we passed through all the "rooms"
+      (swap! counter inc)) ; if at the end, update the counter
+    (let [newmap (assoc datacentermap [x y] 9) ; update the map to show where we walked already
+          paths (for [step [left right above below]
+                  :when (or
+                    (= 0 (newmap (step x y)))
+                    (= 3 (newmap (step x y))))]
+                  (step x y))]
+      ; I AM HERE - this is getting the right paths - need to map these into agents
+      (prn newmap)
+      (prn paths)
+      (dorun (map #(seek-end newmap [(first %) (second %)] (conj bc %)) paths))))
   )
+    ; Step 1 - see where we are... are we done?
+    ; Step 2 - loop through all the paths and kick off a new agent for each one
+    ; Step 3 - could we just recur for one of the branches to avoid creating too many agents?
 
 
 (defn -main [w h datacenterinput]
@@ -76,12 +67,13 @@
 
 
     ; Now you have a map of [w h] to map entry, so for example the '2' is value for key [0 0]
-    (prn datacentermap)
+    ;(prn datacentermap)
     (seek-end
       ; this assoc to "9" marks where we have walked
-      (assoc datacentermap [startx starty] 9)
+      datacentermap
       ; this tells seek-end where we currently are
-      startx starty)
+      [startx starty] [[startx starty]])
+    (printf "Counter = %d" @counter)
   ))
 
 (-main w h datacenterinput)
