@@ -1,7 +1,7 @@
 (comment
   "Parallelized solution to Quora Datacenter Cooling found at http://www.quora.com/challenges.
 
-  Puts the datacentermap into a map of coordinates to map cell value. So for example is we are starting
+  Puts the datacentermap into a map of coordinates to map cell value. So for example if we are starting
   at x/y coordinates '0' and '1', there will be a key in the datacentermap of [0 1] whose value is 2.
 
   So throughout the convention is to treat 'coordinates' as a 2 member vector with the x value first.
@@ -19,13 +19,13 @@
   arrays or even numbers with the values shifted into them. That would facilitate some short circuit logic that
   is not easily done with the current model. For example, if you want to figure out if an area of the map
   is now unsolveable if entered, you might want to dynamically iterate the map, which takes CPU. If the model
-  was all primitive types you could probably half a much simpler shorthand for calculating things about the map.
+  was all primitive types you could probably have a much simpler shorthand for calculating things about the map.
 
   In any case I will keep the model in maps for now, and attempt to build the short circuit logic on top of them
   using additional collections that keep track of things like what columns/rows have been completely filled up.
 
-  I would also like to play with parralleziation a little more and see if I can get it to scale better over
-  multiple threads. Right now just throwning the core function over pmap is not effective.
+  I would also like to play with parallization a little more and see if I can get it to scale better over
+  multiple threads. Right now just throwing the core function over pmap is not effective.
   "
   )
 
