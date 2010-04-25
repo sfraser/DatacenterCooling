@@ -14,13 +14,14 @@ How to Run
 
 At the top of the file set these vars:
 
-; Dimensions of the grid - make this bigger if you have more horsepower!
-(def x-cells ( * 32 2))
-(def y-cells ( * 48 2))
+; Dimensions of the grid - "width" and "height":
+(def w 4)
+(def h 3)
 
-; Size in pixels of the squares we will paint on the screen - make this smaller with larger size grids
-(def cell-size 5)
+; The datacenter map as a sequence. For example here is the first challenge from
+; the quora website:
+(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
 
-Then call -main with the following params:
+Then call -main:
 
-* number of windows you want to see
+(-main)

@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" readonly="true" id="1c2a803d-5ded-4d5a-8750-26f09f2a2454" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/README" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/README" afterPath="$PROJECT_DIR$/README" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/frasers/quora/cooling/DatacenterCooling.clj" afterPath="$PROJECT_DIR$/src/org/frasers/quora/cooling/DatacenterCooling.clj" />
     </list>
     <ignored path=".idea/workspace.xml" />
     <ignored path="$USER_HOME_GRAILS$/" />
@@ -66,19 +65,19 @@
   <component name="FileColors" enabled="true" enabledForTabs="true" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="DatacenterCooling.clj" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="DatacenterCooling.clj" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/org/frasers/quora/cooling/DatacenterCooling.clj">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="85" column="0" selection-start="2516" selection-end="2516" vertical-scroll-proportion="2.8176796">
+            <state line="26" column="0" selection-start="1224" selection-end="1296" vertical-scroll-proportion="44.692307">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="README" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="README" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/README">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="11" column="0" selection-start="513" selection-end="513" vertical-scroll-proportion="0.0">
+            <state line="26" column="7" selection-start="813" selection-end="813" vertical-scroll-proportion="0.7741935">
               <folding />
             </state>
           </provider>
@@ -94,8 +93,8 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/README" />
         <option value="$PROJECT_DIR$/src/org/frasers/quora/cooling/DatacenterCooling.clj" />
+        <option value="$PROJECT_DIR$/README" />
       </list>
     </option>
   </component>
@@ -442,13 +441,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/README">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="11" column="0" selection-start="513" selection-end="513" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar://$PROJECT_DIR$/lib/clojure.jar!/clojure/core.clj">
       <provider selected="true" editor-type-id="text-editor">
         <state line="4496" column="6" selection-start="153271" selection-end="153271" vertical-scroll-proportion="0.17783505">
@@ -458,7 +450,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/org/frasers/quora/cooling/DatacenterCooling.clj">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="85" column="0" selection-start="2516" selection-end="2516" vertical-scroll-proportion="2.8176796">
+        <state line="26" column="0" selection-start="1224" selection-end="1296" vertical-scroll-proportion="44.692307">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="26" column="7" selection-start="813" selection-end="813" vertical-scroll-proportion="0.7741935">
           <folding />
         </state>
       </provider>
