@@ -5,13 +5,13 @@
 (ns org.frasers.quora.cooling.DatacenterCooling)
   ;(:use clojure.contrib.duck-streams))
 
-;(def w 4)
-;(def h 3)
-;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
-
 (def w 4)
-(def h 4)
-(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3))
+(def h 3)
+(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
+
+;(def w 4)
+;(def h 4)
+;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3))
 
 
 ;(def w 7)
@@ -28,41 +28,57 @@
 
 (def counter (atom 0))
 
-(defn above [x y]
+(defn above [[x y]]
   ; I could probably remove the pos check or else to make this consistent check for overflow too
   (if (pos? y)
     [x (dec y)])
   )
 
-(defn below [x y]
+(defn below [[x y]]
   (if (< y (dec h))
     [x (inc y)])
   )
 
-(defn left [x y]
+(defn left [[x y]]
   (if (pos? x)
     [(dec x) y])
   )
 
-(defn right [x y]
+(defn right [[x y]]
   (if (< x (dec w))
     [(inc x) y])
   )
 
+; count the number of c in col
+(defn count-num [x col]
+  (count (filter #(= x %) col)))
 
-(defn seek-end [datacentermap [x y] bc]
+; total rooms in the grid that we will need to pass through
+(def tr)
+
+
+; datacentermap - map of where we are at so far
+; [x y] - coordinates of current locations
+; ts - counter of total steps taken so far
+(defn seek-end [datacentermap coords ts]
   ;(println (format "loc: %d %d" x y))
   ;(prn "bc = " bc)
-  (if (= 3 (datacentermap [x y])) ; see if we are at the end
+  (if (= 3 (datacentermap coords)) ; see if we are at the end
     (if (not (some zero? (vals datacentermap))) ; make sure we passed through all the "rooms"
       (swap! counter inc)) ; if at the end, update the counter
-    (let [newmap (assoc datacentermap [x y] 9) ; update the map to show where we walked already
-          paths (for [step [left right above below]
+    (let [newmap (assoc datacentermap coords 9) ; update the map to show where we walked already
+          paths (for [step (for [possible-step [left right above below]
+                                 :when (not (nil? (possible-step coords)))]
+                    (possible-step coords))
                   :when (or
-                    (= 0 (newmap (step x y)))
-                    (= 3 (newmap (step x y))))]
-                  (step x y))]
-      (dorun (map #(seek-end newmap [(first %) (second %)] (conj bc %)) paths))))
+                    (= 0 (newmap step)) ; move into open room we have not gone to yet
+                    (and ; move to end step room (marked with a "3"
+                      (= ts tr) ; but only move to the end room if we have gone through all our rooms already
+                      (= 3 (newmap step))))]
+                  step)]
+
+      ;(prn paths)
+      (dorun (map #(seek-end newmap % (inc ts)) paths))))
   )
     ; Step 1 - see where we are... are we done?
     ; Step 2 - loop through all the paths and kick off a new agent for each one
@@ -79,17 +95,17 @@
         ]
     ; validation: there should only be one 2 and one 3
 
-
     ; Now you have a map of [w h] to map entry, so for example the '2' is value for key [0 0]
     ;(prn datacentermap)
     (seek-end
       ; this assoc to "9" marks where we have walked
       datacentermap
       ; this tells seek-end where we currently are
-      [startx starty] [[startx starty]])
-    (prn (format "Counter = %d" @counter))
+      [startx starty] 0)
+    (prn (format "Total routes found: %d" @counter))
   ))
 
-(time( -main w h datacenterinput))
+(time(binding [tr (count-num 0 datacenterinput)]
+        (-main w h datacenterinput)))
 
 
