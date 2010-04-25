@@ -5,25 +5,25 @@
 (ns org.frasers.quora.cooling.DatacenterCooling)
   ;(:use clojure.contrib.duck-streams))
 
-(def w 4)
-(def h 3)
-(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
+;(def w 4)
+;(def h 3)
+;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
 
 ;(def w 4)
 ;(def h 4)
 ;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3))
 
 
-;(def w 7)
-;(def h 8)
-;(def datacenterinput '(2 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;3 0 0 0 0 1 1))
+(def w 7)
+(def h 8)
+(def datacenterinput '(2 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+3 0 0 0 0 1 1))
 
 (def datacentermap
   (zipmap (for [h (range h) w (range w)] [w h])
@@ -115,8 +115,8 @@
     (prn (format "Total routes found: %d" @total-solutions))
   )
 
-(dorun (for [x (range 10)] (time (-main))))
+;(dorun (for [x (range 10)] (time (-main))))
 
-;(time (-main))
+(time (-main))
 
 
