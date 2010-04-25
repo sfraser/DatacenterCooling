@@ -1,0 +1,26 @@
+
+
+Experimenting with clojure to see how it handles solving the Datacenter Cooling challenge here:
+    http://www.quora.com/challenges
+
+Right now I am focusing on the logic, so the program itself does not meet all the input/output
+requirements of the challenge.
+
+The current version is brute-force - it just tries to find all the routes with no intelligence. It
+is also easy to try parrallelizing the program, but right now on smaller datasets with 2 cores (my
+laptop) it is faster to brute force with one thread.
+
+How to Run
+
+At the top of the file set these vars:
+
+; Dimensions of the grid - make this bigger if you have more horsepower!
+(def x-cells ( * 32 2))
+(def y-cells ( * 48 2))
+
+; Size in pixels of the squares we will paint on the screen - make this smaller with larger size grids
+(def cell-size 5)
+
+Then call -main with the following params:
+
+* number of windows you want to see
