@@ -9,12 +9,24 @@
   Also note that as per the challenge, the coordinate system starts with [0 0] being in the upper lefthand
   corner.
 
-  Currently this solution is very slow on my laptop - I am going to guess because of the usage of maps and
-  vectors. A more ideal solution might treat the datacentermap as a structure built on primitive types -
-  arrays or even numbers with the values shifted into them. That would enable some short circuit logic that
+  Currently this solution is very slow on my laptop. It needs some more intelligence regarding how and
+  when it can short circuit a route and give up. Most CPU right now is related to map/hashing activity
+  of the vectors. However that time is maybe only 10% of CPU, so I think what this program really needs
+  next is some short-circuit logic.
+
+  That being said, getting rid of the collections and using more primitive types would not hurt.
+  A more ideal solution might treat the datacentermap as a structure built on primitive types -
+  arrays or even numbers with the values shifted into them. That would facilitate some short circuit logic that
   is not easily done with the current model. For example, if you want to figure out if an area of the map
-  is now unsolveable if entered, you need to iterate the map, as opposed to being able to address it more
-  simply as rows and columns."
+  is now unsolveable if entered, you might want to dynamically iterate the map, which takes CPU. If the model
+  was all primitive types you could probably half a much simpler shorthand for calculating things about the map.
+
+  In any case I will keep the model in maps for now, and attempt to build the short circuit logic on top of them
+  using additional collections that keep track of things like what columns/rows have been completely filled up.
+
+  I would also like to play with parralleziation a little more and see if I can get it to scale better over
+  multiple threads. Right now just throwning the core function over pmap is not effective.
+  "
   )
 
 (ns org.frasers.quora.cooling.DatacenterCooling)
@@ -24,25 +36,29 @@
 ;;;; Challenge Inputs
 ;;;;
 
+; small example from quora website
 ;(def w 4)
 ;(def h 3)
 ;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
 
-;(def w 4)
-;(def h 4)
-;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3))
+; my own slightly larger version of the above that has 4 solutions
+(def w 4)
+(def h 4)
+(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3))
 
-
-(def w 7)
-(def h 8)
-(def datacenterinput '(2 0 0 0 0 0 0
-0 0 0 0 0 0 0
-0 0 0 0 0 0 0
-0 0 0 0 0 0 0
-0 0 0 0 0 0 0
-0 0 0 0 0 0 0
-0 0 0 0 0 0 0
-3 0 0 0 0 1 1))
+; Big example from quora website that they solve in C "in under 5 seconds on a 2.4GHz Pentium 4"!
+; They note this 5 second time is their best case, and the coder should aim for 1-2 orders of magnitude
+; of that score.
+;(def w 7)
+;(def h 8)
+;(def datacenterinput '(2 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;3 0 0 0 0 1 1))
 
 ;;;;; Create a map of the datacenter to start with
 (def datacentermap
