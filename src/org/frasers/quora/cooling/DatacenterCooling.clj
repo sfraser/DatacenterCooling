@@ -5,9 +5,26 @@
 (ns org.frasers.quora.cooling.DatacenterCooling)
   ;(:use clojure.contrib.duck-streams))
 
+;(def w 4)
+;(def h 3)
+;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
+
 (def w 4)
-(def h 3)
-(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
+(def h 4)
+(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3))
+
+
+;(def w 7)
+;(def h 8)
+;(def datacenterinput '(2 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;0 0 0 0 0 0 0
+;3 0 0 0 0 1 1))
+
 
 (def counter (atom 0))
 
@@ -34,8 +51,8 @@
 
 
 (defn seek-end [datacentermap [x y] bc]
-  (println (format "loc: %d %d" x y))
-  (prn "bc = " bc)
+  ;(println (format "loc: %d %d" x y))
+  ;(prn "bc = " bc)
   (if (= 3 (datacentermap [x y])) ; see if we are at the end
     (if (not (some zero? (vals datacentermap))) ; make sure we passed through all the "rooms"
       (swap! counter inc)) ; if at the end, update the counter
@@ -45,9 +62,6 @@
                     (= 0 (newmap (step x y)))
                     (= 3 (newmap (step x y))))]
                   (step x y))]
-      ; I AM HERE - this is getting the right paths - need to map these into agents
-      (prn newmap)
-      (prn paths)
       (dorun (map #(seek-end newmap [(first %) (second %)] (conj bc %)) paths))))
   )
     ; Step 1 - see where we are... are we done?
@@ -73,9 +87,9 @@
       datacentermap
       ; this tells seek-end where we currently are
       [startx starty] [[startx starty]])
-    (printf "Counter = %d" @counter)
+    (prn (format "Counter = %d" @counter))
   ))
 
-(-main w h datacenterinput)
+(time( -main w h datacenterinput))
 
 

@@ -68,7 +68,7 @@
       <file leaf-file-name="DatacenterCooling.clj" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/org/frasers/quora/cooling/DatacenterCooling.clj">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="39" column="93" selection-start="871" selection-end="871" vertical-scroll-proportion="0.725">
+            <state line="13" column="54" selection-start="346" selection-end="346" vertical-scroll-proportion="-1.64">
               <folding />
             </state>
           </provider>
@@ -546,7 +546,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/org/frasers/quora/cooling/DatacenterCooling.clj">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="39" column="93" selection-start="871" selection-end="871" vertical-scroll-proportion="0.725">
+        <state line="13" column="54" selection-start="346" selection-end="346" vertical-scroll-proportion="-1.64">
           <folding />
         </state>
       </provider>
