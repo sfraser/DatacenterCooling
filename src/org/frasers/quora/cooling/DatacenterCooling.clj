@@ -1,5 +1,6 @@
 (comment
-  "Parallelized solution to Quora Datacenter Cooling found at http://www.quora.com/challenges.
+  "Solution to heart of Quora Datacenter Cooling problem found at http://www.quora.com/challenges.
+  This is not a complete solution yet, and is not parallelized successfully either. Just playing right now.
 
   Puts the datacentermap into a map of coordinates to map cell value. So for example if we are starting
   at x/y coordinates '0' and '1', there will be a key in the datacentermap of [0 1] whose value is 2.
