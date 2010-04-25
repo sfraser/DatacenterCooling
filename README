@@ -18,8 +18,8 @@ At the top of the file set these vars:
 (def w 4)
 (def h 3)
 
-; The datacenter map as a sequence. For example here is the first challenge from
-; the quora website:
+; The datacenter map as a sequence flowing left to right, and top to bottom.
+; For example here is the first challenge from the quora website:
 (def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
 
 Then call -main:
