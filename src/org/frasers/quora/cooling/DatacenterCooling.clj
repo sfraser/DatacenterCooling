@@ -67,15 +67,17 @@
     (if (not (some zero? (vals datacentermap))) ; make sure we passed through all the "rooms"
       (swap! counter inc)) ; if at the end, update the counter
     (let [newmap (assoc datacentermap coords 9) ; update the map to show where we walked already
-          paths (for [step (for [possible-step [left right above below]
-                                 :when (not (nil? (possible-step coords)))]
-                    (possible-step coords))
-                  :when (or
-                    (= 0 (newmap step)) ; move into open room we have not gone to yet
-                    (and ; move to end step room (marked with a "3"
-                      (= ts tr) ; but only move to the end room if we have gone through all our rooms already
-                      (= 3 (newmap step))))]
-                  step)]
+          paths (for [step [left right above below]
+                      :let [next-room-coords (step coords)
+                            next-room-value (newmap next-room-coords)]
+                      :when (and
+                              (not (nil? next-room-coords))
+                              (or
+                                (= 0 next-room-value)
+                                (and
+                                  (= ts tr)
+                                  (= 3 next-room-value))))]
+                      next-room-coords)]
 
       ;(prn paths)
       (dorun (map #(seek-end newmap % (inc ts)) paths))))
