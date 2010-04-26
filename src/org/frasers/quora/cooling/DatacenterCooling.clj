@@ -45,14 +45,19 @@
 ; my own slightly larger version of the above that has 4 solutions
 (def w 4)
 (def h 4)
-(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3))
+(def datacenterinput '(
+  2 0 0 0
+  0 0 0 0
+  0 0 0 0
+  0 0 1 3))
 
 ; Big example from quora website that they solve in C "in under 5 seconds on a 2.4GHz Pentium 4"!
 ; They note this 5 second time is their best case, and the coder should aim for 1-2 orders of magnitude
 ; of that score.
 ;(def w 7)
 ;(def h 8)
-;(def datacenterinput '(2 0 0 0 0 0 0
+;(def datacenterinput '(
+;2 0 0 0 0 0 0
 ;0 0 0 0 0 0 0
 ;0 0 0 0 0 0 0
 ;0 0 0 0 0 0 0
@@ -61,16 +66,28 @@
 ;0 0 0 0 0 0 0
 ;3 0 0 0 0 1 1))
 
+(defn findkey
+  "Find the Value v in Map m and return the Key"
+  [m v]
+  (first (first (filter #(= v (second %)) (seq m))))
+  )
+
 ;;;;; Create a map of the datacenter to start with
 (def datacentermap
   (zipmap (for [h (range h) w (range w)] [w h])
                         datacenterinput))
 
-;;;;; Need to calculate these - for now they are hard coded
+; Vectors to track how many rooms are filled in by row and column
+(def rowcounts (vec (for [h (range h)] (count (filter pos? (for [w (range w)] (datacentermap [w h])))))))
+(def colcounts (vec (for [w (range w)] (count (filter pos? (for [h (range h)] (datacentermap [w h])))))))
 
 ; starting coordinates
-(def startx 0)
-(def starty 0)
+(def startx (first (findkey datacentermap 2)))
+(def starty (second (findkey datacentermap 2)))
+
+; ending coordinates
+(def endx (first (findkey datacentermap 3)))
+(def endy (second (findkey datacentermap 3)))
 
 (defn count-num
   "Count the number of 'x' in col"
