@@ -78,8 +78,9 @@
                         datacenterinput))
 
 ; Vectors to track how many rooms are filled in by row and column
-(def rowcounts (vec (for [h (range h)] (count (filter pos? (for [w (range w)] (datacentermap [w h])))))))
-(def colcounts (vec (for [w (range w)] (count (filter pos? (for [h (range h)] (datacentermap [w h])))))))
+; we only count 1's and 3's - we don't count the "2" where we start
+(def origrowcounts (vec (for [h (range h)] (count (filter #(or (= 1 %) (= 3 %)) (for [w (range w)] (datacentermap [w h])))))))
+(def origcolcounts (vec (for [w (range w)] (count (filter #(or (= 1 %) (= 3 %)) (for [h (range h)] (datacentermap [w h])))))))
 
 ; starting coordinates
 (def startx (first (findkey datacentermap 2)))
@@ -141,11 +142,13 @@
   to find solutions. We are at the datacentermap location specified by coords when called, and the
   ts counter is a 'total steps taken' counter we use as a shortcut to confirming that we have
   passed through every room (because it can be compared to tr)."
-  [datacentermap coords ts]
+  [datacentermap coords ts colcounts rowcounts]
   (if (= 3 (datacentermap coords)) ; see if we are at the end
     (if (= ts (inc tr)) ; redundant check - make sure we passed through all the rooms and are really done
       (swap! total-solutions inc)) ; if at the end, update the counter
     (let [newmap  (assoc datacentermap coords 9) ; update the map to show where we walked already
+          newcolcounts (assoc colcounts (first coords) (inc (colcounts (first coords))))
+          newrowcounts (assoc rowcounts (second coords) (inc (rowcounts (second coords))))
           paths   ; figure out what our possible valid next steps could be
                   (for [next-step (my-determine-possible-next-directions coords)
                       :let [next-room-value (newmap next-step)]
@@ -158,11 +161,20 @@
                   next-step)
           ]
       ; this next section is structured to allow playing with some parallelism
+      ;(prn rowcounts)
+      ;(prn colcounts)
+
+      ; figure out if we can shortcircuit this route
+
+      ; if the row or col we are on is populated fully, and there is a row or column to our right AND left
+      ; not fully populated, this route may be short circuited
+      ; I AM HERE            
+
       (if (> (count paths) 1)
         ; pmap will not be effective here without throttling the size of the thread pool
-        (dorun (map #(seek-end newmap % (inc ts)) (rest paths)))) ; kickoff new threads for other paths to leverage cores
+        (dorun (map #(seek-end newmap % (inc ts) newcolcounts newrowcounts) (rest paths)))) ; kickoff new threads for other paths to leverage cores
       (if (pos? (count paths))
-        (recur newmap (first paths) (inc ts)))) ; stay on this thread for the main path of execution
+        (recur newmap (first paths) (inc ts) newcolcounts newrowcounts))) ; stay on this thread for the main path of execution
     )
   )
 (defn -main []
@@ -170,7 +182,7 @@
 
     ; clear the total-colutions counter in case we are doing multiple runs
     (swap! total-solutions (fn [ignored] 0)) ; this feels wrong - what is an easier way?
-    (seek-end datacentermap [startx starty] 0)
+    (seek-end datacentermap [startx starty] 0 origcolcounts origrowcounts)
     (prn (format "Total routes found: %d" @total-solutions))
   )
 
