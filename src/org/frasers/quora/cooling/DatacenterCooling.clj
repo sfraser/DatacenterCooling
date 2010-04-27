@@ -134,6 +134,38 @@
           (step coords)))
   )
 
+(defn route-is-invalid
+  "Determine if route represented in map m is invalid. Coords passed in are a hint as to
+  where we are in the map currently. Returns true or false. Vectors with counts of filled
+  in cells by row and col are passed into provide extra data to work with."
+  [m [x y] colcounts rowcounts]
+  (if (< 0 x (dec w))
+    ; if the row or col we are on is populated fully, and there is a row or column to our right AND left
+    ; not fully populated, this route may be short circuited    
+    (if (= h (colcounts x))
+      ;(prn (format "x: %d colcounts: %s" x colcounts))
+      (if (and
+          (> h (colcounts (dec x)))
+          (> h (colcounts (inc x))))
+        ;(prn "AXED - COL")
+        true
+        ))
+    )
+  (if (< 0 y (dec h))
+    ; if the row or col we are on is populated fully, and there is a row or column to our right AND left
+    ; not fully populated, this route may be short circuited
+    (if (= w (rowcounts y))
+      (if (and
+          (> w (rowcounts (dec y)))
+          (> w (rowcounts (inc y))))
+        ;(prn "AXED - ROW")
+        true
+        ))
+    )
+    ; prn "NOT AXED")
+    false
+  )
+
 ; memoized wrapper for the above function - seems to help!
 (def my-determine-possible-next-directions (memoize determine-possible-next-directions))
 
@@ -141,7 +173,8 @@
   "Primary function of this program. Recurs and calls itself via (p)map as it brute force tries
   to find solutions. We are at the datacentermap location specified by coords when called, and the
   ts counter is a 'total steps taken' counter we use as a shortcut to confirming that we have
-  passed through every room (because it can be compared to tr)."
+  passed through every room (because it can be compared to tr). The rowcounts and colcounts param
+  let us track how many filled in rooms by row and col, which can be used by short circuit logic."
   [datacentermap coords ts colcounts rowcounts]
   (if (= 3 (datacentermap coords)) ; see if we are at the end
     (if (= ts (inc tr)) ; redundant check - make sure we passed through all the rooms and are really done
@@ -149,26 +182,26 @@
     (let [newmap  (assoc datacentermap coords 9) ; update the map to show where we walked already
           newcolcounts (assoc colcounts (first coords) (inc (colcounts (first coords))))
           newrowcounts (assoc rowcounts (second coords) (inc (rowcounts (second coords))))
+          routeisbad (route-is-invalid newmap coords newcolcounts newrowcounts) ; is this current route lame?
           paths   ; figure out what our possible valid next steps could be
                   (for [next-step (my-determine-possible-next-directions coords)
                       :let [next-room-value (newmap next-step)]
                       :when
-                        (or
-                          (= 0 next-room-value) ; we can move into rooms still marked "0"
-                          (and
-                            (= ts tr) ; confirm before moving onto end room we have passed through all rooms
-                            (= 3 next-room-value)))]
+                        (and
+                          (not routeisbad) ; need to find a quicker way to shortcircuit than in here, this is a kludge for now
+                          (or
+                            (= 0 next-room-value) ; we can move into rooms still marked "0"
+                            (and
+                              (= ts tr) ; confirm before moving onto end room we have passed through all rooms
+                              (= 3 next-room-value)))
+                          ;(not (route-is-invalid newmap next-step newcolcounts newrowcounts))
+                          ; true
+                          )]
                   next-step)
           ]
       ; this next section is structured to allow playing with some parallelism
       ;(prn rowcounts)
       ;(prn colcounts)
-
-      ; figure out if we can shortcircuit this route
-
-      ; if the row or col we are on is populated fully, and there is a row or column to our right AND left
-      ; not fully populated, this route may be short circuited
-      ; I AM HERE            
 
       (if (> (count paths) 1)
         ; pmap will not be effective here without throttling the size of the thread pool
@@ -177,6 +210,7 @@
         (recur newmap (first paths) (inc ts) newcolcounts newrowcounts))) ; stay on this thread for the main path of execution
     )
   )
+
 (defn -main []
     ; validation: there should only be one 2 and one 3
 
@@ -186,7 +220,14 @@
     (prn (format "Total routes found: %d" @total-solutions))
   )
 
-;(dorun (for [x (range 10)] (time (-main))))
+(defmacro my-time
+  "Evaluates expr and returns the time it took."
+  [expr]
+  `(let [start# (. System (nanoTime))
+         ret# ~expr]
+     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
+
+;(prn (format "Average = %f ms." (/ (reduce + (for [x (range 1000)] (my-time (-main)))) 1000 )))
 
 (time (-main))
 
