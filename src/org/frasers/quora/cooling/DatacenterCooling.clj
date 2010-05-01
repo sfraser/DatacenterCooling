@@ -33,6 +33,8 @@
 (ns org.frasers.quora.cooling.DatacenterCooling)
   ;(:use clojure.contrib.duck-streams))
 
+(import '(java.util.concurrent Executors ExecutorService TimeUnit))
+
 ;;;;
 ;;;; Challenge Inputs
 ;;;;
@@ -43,13 +45,23 @@
 ;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
 
 ; my own slightly larger version of the above that has 4 solutions
-(def w 4)
-(def h 4)
+;(def w 4)
+;(def h 4)
+;(def datacenterinput '(
+;  2 0 0 0
+;  0 0 0 0
+;  0 0 0 0
+;  0 0 1 3))
+
+; another larger one I use on the core i7 - it has 38 solutions
+(def w 5)
+(def h 5)
 (def datacenterinput '(
-  2 0 0 0
-  0 0 0 0
-  0 0 0 0
-  0 0 1 3))
+  2 0 0 0 0
+  0 0 0 0 0
+  0 0 0 0 0
+  0 0 0 0 0
+  0 0 3 1 1))
 
 ; Big example from quora website that they solve in C "in under 5 seconds on a 2.4GHz Pentium 4"!
 ; They note this 5 second time is their best case, and the coder should aim for 1-2 orders of magnitude
@@ -169,6 +181,10 @@
 ; memoized wrapper for the above function - seems to help!
 (def my-determine-possible-next-directions (memoize determine-possible-next-directions))
 
+(def available-procs (.. java.lang.Runtime getRuntime availableProcessors))
+
+(def #^ExecutorService exec-service (Executors/newFixedThreadPool (dec available-procs)))
+
 (defn seek-end
   "Primary function of this program. Recurs and calls itself via (p)map as it brute force tries
   to find solutions. We are at the datacentermap location specified by coords when called, and the
@@ -205,7 +221,9 @@
 
       (if (> (count paths) 1)
         ; pmap will not be effective here without throttling the size of the thread pool
-        (dorun (map #(seek-end newmap % (inc ts) newcolcounts newrowcounts) (rest paths)))) ; kickoff new threads for other paths to leverage cores
+        ;(dorun (map #(seek-end newmap % (inc ts) newcolcounts newrowcounts) (rest paths)))) ; kickoff new threads for other paths to leverage cores      
+        (doseq [path (rest paths)]
+          (.execute exec-service #(seek-end newmap path (inc ts) newcolcounts newrowcounts))))
       (if (pos? (count paths))
         (recur newmap (first paths) (inc ts) newcolcounts newrowcounts))) ; stay on this thread for the main path of execution
     )
@@ -217,6 +235,13 @@
     ; clear the total-colutions counter in case we are doing multiple runs
     (swap! total-solutions (fn [ignored] 0)) ; this feels wrong - what is an easier way?
     (seek-end datacentermap [startx starty] 0 origcolcounts origrowcounts)
+
+    ; I AM HERE - trying out a Java executor service to spread out the load
+    ; shutdown the executor service
+    (.shutdown exec-service)
+    (.awaitTermination exec-service 60 TimeUnit/SECONDS)
+
+
     (prn (format "Total routes found: %d" @total-solutions))
   )
 
@@ -227,8 +252,8 @@
          ret# ~expr]
      (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
 
-;(prn (format "Average = %f ms." (/ (reduce + (for [x (range 1000)] (my-time (-main)))) 1000 )))
+(prn (format "Average = %f ms." (/ (reduce + (for [x (range 1000)] (my-time (-main)))) 1000 )))
 
-(time (-main))
+;(time (-main))
 
 
