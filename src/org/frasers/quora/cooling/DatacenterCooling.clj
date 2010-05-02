@@ -33,7 +33,9 @@
 (ns org.frasers.quora.cooling.DatacenterCooling)
   ;(:use clojure.contrib.duck-streams))
 
-(import '(java.util.concurrent Executors ExecutorService TimeUnit))
+(import '(java.util.concurrent Executors ExecutorService TimeUnit)
+        '(java.util.concurrent.locks ReentrantReadWriteLock)
+  )
 
 ;;;;
 ;;;; Challenge Inputs
@@ -181,9 +183,16 @@
 ; memoized wrapper for the above function - seems to help!
 (def my-determine-possible-next-directions (memoize determine-possible-next-directions))
 
+; figure out how many worker threads we should have
 (def available-procs (.. java.lang.Runtime getRuntime availableProcessors))
 
-(def #^ExecutorService exec-service (Executors/newFixedThreadPool (dec available-procs)))
+; pool of worker threads
+(def #^ExecutorService exec-service (Executors/newFixedThreadPool (inc available-procs)))
+
+; ReadWriteLock to coordinate knowing when we are all done
+(def rwlock (ReentrantReadWriteLock.))
+
+(defn seek-end-with-lock)
 
 (defn seek-end
   "Primary function of this program. Recurs and calls itself via (p)map as it brute force tries
@@ -223,24 +232,38 @@
         ; pmap will not be effective here without throttling the size of the thread pool
         ;(dorun (map #(seek-end newmap % (inc ts) newcolcounts newrowcounts) (rest paths)))) ; kickoff new threads for other paths to leverage cores      
         (doseq [path (rest paths)]
-          (.execute exec-service #(seek-end newmap path (inc ts) newcolcounts newrowcounts))))
+          ; I AM HERE - ReadWriteLocks as coordination mechanism have many race defects - any one moment
+          ; you might happen to have no read locks but there may still be work in queues. We clearly need
+          ; an Atomic counter that is incremented at the moment of mapping the task as opposed to a construct
+          ; accessed when the unit of work starts. Once that Atomic int is zero, we know we are done.
+          (.execute exec-service #(seek-end-with-lock newmap path (inc ts) newcolcounts newrowcounts))))
       (if (pos? (count paths))
         (recur newmap (first paths) (inc ts) newcolcounts newrowcounts))) ; stay on this thread for the main path of execution
     )
   )
+
+; wrapper to seek-end that tries to use ReadWriteLocks to determine when we are done
+; this did not work as there is a race since lock is acquired later after task is mapped
+(defn seek-end-with-lock [datacentermap coords ts colcounts rowcounts]
+  (.. rwlock readLock lock)
+  (seek-end datacentermap coords ts colcounts rowcounts)
+  (.. rwlock readLock unlock)
+  )
+
+
 
 (defn -main []
     ; validation: there should only be one 2 and one 3
 
     ; clear the total-colutions counter in case we are doing multiple runs
     (swap! total-solutions (fn [ignored] 0)) ; this feels wrong - what is an easier way?
-    (seek-end datacentermap [startx starty] 0 origcolcounts origrowcounts)
+    (seek-end-with-lock datacentermap [startx starty] 0 origcolcounts origrowcounts)
 
-    ; I AM HERE - trying out a Java executor service to spread out the load
-    ; shutdown the executor service
-    (.shutdown exec-service)
-    (.awaitTermination exec-service 60 TimeUnit/SECONDS)
+    (.. rwlock writeLock lock)
 
+    ; If needed to (which we don't) we would shutdown the executor service
+    ;(.shutdown exec-service)
+    ;(.awaitTermination exec-service 60 TimeUnit/SECONDS)
 
     (prn (format "Total routes found: %d" @total-solutions))
   )
