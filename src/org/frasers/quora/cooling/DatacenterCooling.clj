@@ -34,7 +34,7 @@
   ;(:use clojure.contrib.duck-streams))
 
 (import '(java.util.concurrent Executors ExecutorService TimeUnit)
-        '(java.util.concurrent.locks ReentrantReadWriteLock)
+        '(java.util.concurrent CountDownLatch)
   )
 
 ;;;;
@@ -42,9 +42,9 @@
 ;;;;
 
 ; small example from quora website
-;(def w 4)
-;(def h 3)
-;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
+(def w 4)
+(def h 3)
+(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
 
 ; my own slightly larger version of the above that has 4 solutions
 ;(def w 4)
@@ -56,14 +56,14 @@
 ;  0 0 1 3))
 
 ; another larger one I use on the core i7 - it has 38 solutions
-(def w 5)
-(def h 5)
-(def datacenterinput '(
-  2 0 0 0 0
-  0 0 0 0 0
-  0 0 0 0 0
-  0 0 0 0 0
-  0 0 3 1 1))
+;(def w 5)
+;(def h 5)
+;(def datacenterinput '(
+;  2 0 0 0 0
+;  0 0 0 0 0
+;  0 0 0 0 0
+;  0 0 0 0 0
+;  0 0 3 1 1))
 
 ; Big example from quora website that they solve in C "in under 5 seconds on a 2.4GHz Pentium 4"!
 ; They note this 5 second time is their best case, and the coder should aim for 1-2 orders of magnitude
@@ -189,10 +189,22 @@
 ; pool of worker threads
 (def #^ExecutorService exec-service (Executors/newFixedThreadPool (inc available-procs)))
 
-; ReadWriteLock to coordinate knowing when we are all done
-(def rwlock (ReentrantReadWriteLock.))
+; Atom to track start time
+(def start-time (atom 0))
 
-(defn seek-end-with-lock)
+; Latch to track till we are done
+(def latch (CountDownLatch. 1))
+
+(defn watch-numtasks [key ref old-state new-state]
+  ;(prn (format "numtasks old: %d new: %d" old-state new-state))
+  (if (zero? new-state)
+    (prn (format "No tasks running! Total solutions found: %d" @total-solutions)
+    (prn (format "Total time: %s" (/ (double (- (. System (nanoTime)) @start-time)) 1000000.0)))))
+    (.countDown latch)
+  )
+
+; Atom to keep track of number of current work tasks
+(def numtasks (atom 0))
 
 (defn seek-end
   "Primary function of this program. Recurs and calls itself via (p)map as it brute force tries
@@ -202,8 +214,10 @@
   let us track how many filled in rooms by row and col, which can be used by short circuit logic."
   [datacentermap coords ts colcounts rowcounts]
   (if (= 3 (datacentermap coords)) ; see if we are at the end
-    (if (= ts (inc tr)) ; redundant check - make sure we passed through all the rooms and are really done
-      (swap! total-solutions inc)) ; if at the end, update the counter
+    (do
+      (if (= ts (inc tr)) ; redundant check - make sure we passed through all the rooms and are really done
+        (swap! total-solutions inc)) ; if at the end, update the counter
+      (swap! numtasks dec)) ; we are at an end so decrement the number of running tasks
     (let [newmap  (assoc datacentermap coords 9) ; update the map to show where we walked already
           newcolcounts (assoc colcounts (first coords) (inc (colcounts (first coords))))
           newrowcounts (assoc rowcounts (second coords) (inc (rowcounts (second coords))))
@@ -219,8 +233,6 @@
                             (and
                               (= ts tr) ; confirm before moving onto end room we have passed through all rooms
                               (= 3 next-room-value)))
-                          ;(not (route-is-invalid newmap next-step newcolcounts newrowcounts))
-                          ; true
                           )]
                   next-step)
           ]
@@ -232,51 +244,40 @@
         ; pmap will not be effective here without throttling the size of the thread pool
         ;(dorun (map #(seek-end newmap % (inc ts) newcolcounts newrowcounts) (rest paths)))) ; kickoff new threads for other paths to leverage cores      
         (doseq [path (rest paths)]
-          ; I AM HERE - ReadWriteLocks as coordination mechanism have many race defects - any one moment
-          ; you might happen to have no read locks but there may still be work in queues. We clearly need
-          ; an Atomic counter that is incremented at the moment of mapping the task as opposed to a construct
-          ; accessed when the unit of work starts. Once that Atomic int is zero, we know we are done.
-          (.execute exec-service #(seek-end-with-lock newmap path (inc ts) newcolcounts newrowcounts))))
-      (if (pos? (count paths))
+          (do
+            (swap! numtasks inc) ; increment our counter that keeps track of how many tasks are running
+            (.execute exec-service #(seek-end newmap path (inc ts) newcolcounts newrowcounts)))))
+      (if (not (pos? (count paths)))
+        (swap! numtasks dec) ; decrement our counter - we must be at an end state if we get to here
         (recur newmap (first paths) (inc ts) newcolcounts newrowcounts))) ; stay on this thread for the main path of execution
     )
   )
 
-; wrapper to seek-end that tries to use ReadWriteLocks to determine when we are done
-; this did not work as there is a race since lock is acquired later after task is mapped
-(defn seek-end-with-lock [datacentermap coords ts colcounts rowcounts]
-  (.. rwlock readLock lock)
-  (seek-end datacentermap coords ts colcounts rowcounts)
-  (.. rwlock readLock unlock)
-  )
-
-
-
 (defn -main []
+    (swap! start-time (fn [ignored] (. System (nanoTime)))) ; as per below, this seems a little kludgey - how else to do?
+
     ; validation: there should only be one 2 and one 3
+
+    ; add our watch to the numtasks atom
+    (add-watch numtasks "numtasks" watch-numtasks)
+
+    ; start out counter of at one
+    (swap! numtasks inc)
 
     ; clear the total-colutions counter in case we are doing multiple runs
     (swap! total-solutions (fn [ignored] 0)) ; this feels wrong - what is an easier way?
-    (seek-end-with-lock datacentermap [startx starty] 0 origcolcounts origrowcounts)
-
-    (.. rwlock writeLock lock)
+    (seek-end datacentermap [startx starty] 0 origcolcounts origrowcounts)
 
     ; If needed to (which we don't) we would shutdown the executor service
     ;(.shutdown exec-service)
     ;(.awaitTermination exec-service 60 TimeUnit/SECONDS)
-
-    (prn (format "Total routes found: %d" @total-solutions))
+    (.await latch)
   )
 
-(defmacro my-time
-  "Evaluates expr and returns the time it took."
-  [expr]
-  `(let [start# (. System (nanoTime))
-         ret# ~expr]
-     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
+;(prn (format "Average = %f ms." (/ (reduce + (for [x (range 1000)] (my-time (-main)))) 1000 )))
 
-(prn (format "Average = %f ms." (/ (reduce + (for [x (range 1000)] (my-time (-main)))) 1000 )))
+;(for [x (range 100)] (-main))
 
-;(time (-main))
+(time (-main))
 
 
