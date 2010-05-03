@@ -42,18 +42,18 @@
 ;;;;
 
 ; small example from quora website
-(def w 4)
-(def h 3)
-(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
+;(def w 4)
+;(def h 3)
+;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
 
 ; my own slightly larger version of the above that has 4 solutions
-;(def w 4)
-;(def h 4)
-;(def datacenterinput '(
-;  2 0 0 0
-;  0 0 0 0
-;  0 0 0 0
-;  0 0 1 3))
+(def w 4)
+(def h 4)
+(def datacenterinput '(
+  2 0 0 0
+  0 0 0 0
+  0 0 0 0
+  0 0 1 3))
 
 ; another larger one I use on the core i7 - it has 38 solutions
 ;(def w 5)
@@ -187,21 +187,15 @@
 (def available-procs (.. java.lang.Runtime getRuntime availableProcessors))
 
 ; pool of worker threads
-(def #^ExecutorService exec-service (Executors/newFixedThreadPool (inc available-procs)))
-
-; Atom to track start time
-(def start-time (atom 0))
+(def #^ExecutorService exec-service (Executors/newFixedThreadPool (max 1 available-procs)))
 
 ; Latch to track till we are done
-(def latch (CountDownLatch. 1))
+(def latch (ref (CountDownLatch. 1)))
 
 (defn watch-numtasks [key ref old-state new-state]
   ;(prn (format "numtasks old: %d new: %d" old-state new-state))
   (if (zero? new-state)
-    (prn (format "No tasks running! Total solutions found: %d" @total-solutions)
-    (prn (format "Total time: %s" (/ (double (- (. System (nanoTime)) @start-time)) 1000000.0)))))
-    (.countDown latch)
-  )
+    (.countDown @latch))) ; CyclicBarrier semantics are a little confusing - this will cause the barrier to break!
 
 ; Atom to keep track of number of current work tasks
 (def numtasks (atom 0))
@@ -254,9 +248,10 @@
   )
 
 (defn -main []
-    (swap! start-time (fn [ignored] (. System (nanoTime)))) ; as per below, this seems a little kludgey - how else to do?
-
     ; validation: there should only be one 2 and one 3
+
+    ; set up our CountDownLatch that will let us know when we are done
+    (dosync (ref-set latch (CountDownLatch. 1)))
 
     ; add our watch to the numtasks atom
     (add-watch numtasks "numtasks" watch-numtasks)
@@ -271,13 +266,24 @@
     ; If needed to (which we don't) we would shutdown the executor service
     ;(.shutdown exec-service)
     ;(.awaitTermination exec-service 60 TimeUnit/SECONDS)
-    (.await latch)
+    (.await @latch)
+
+    (prn (format "Total solutions found: %d" @total-solutions))
+    ;(prn (format "Total time: %s" (/ (double (- (. System (nanoTime)) @start-time)) 1000000.0)))))
+
   )
 
-;(prn (format "Average = %f ms." (/ (reduce + (for [x (range 1000)] (my-time (-main)))) 1000 )))
+(defmacro my-time
+  "Evaluates expr and returns the time it took."
+  [expr]
+  `(let [start# (. System (nanoTime))
+         ret# ~expr]
+     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
+
+(prn (format "Average = %f ms." (/ (reduce + (for [x (range 100)] (my-time (-main)))) 100 )))
 
 ;(for [x (range 100)] (-main))
 
-(time (-main))
+;(time (-main))
 
 
