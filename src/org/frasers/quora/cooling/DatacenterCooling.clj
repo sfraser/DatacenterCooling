@@ -47,23 +47,23 @@
 ;(def datacenterinput '(2 0 0 0 0 0 0 0 0 0 3 1))
 
 ; my own slightly larger version of the above that has 4 solutions
-(def w 4)
-(def h 4)
-(def datacenterinput '(
-  2 0 0 0
-  0 0 0 0
-  0 0 0 0
-  0 0 1 3))
+;(def w 4)
+;(def h 4)
+;(def datacenterinput '(
+;  2 0 0 0
+;  0 0 0 0
+;  0 0 0 0
+;  0 0 1 3))
 
 ; another larger one I use on the core i7 - it has 38 solutions
-;(def w 5)
-;(def h 5)
-;(def datacenterinput '(
-;  2 0 0 0 0
-;  0 0 0 0 0
-;  0 0 0 0 0
-;  0 0 0 0 0
-;  0 0 3 1 1))
+(def w 5)
+(def h 5)
+(def datacenterinput '(
+  2 0 0 0 0
+  0 0 0 0 0
+  0 0 0 0 0
+  0 0 0 0 0
+  0 0 3 1 1))
 
 ; Big example from quora website that they solve in C "in under 5 seconds on a 2.4GHz Pentium 4"!
 ; They note this 5 second time is their best case, and the coder should aim for 1-2 orders of magnitude
@@ -186,8 +186,11 @@
 ; figure out how many worker threads we should have
 (def available-procs (.. java.lang.Runtime getRuntime availableProcessors))
 
+; This is how many worker threads we will have
+(def num-threads (max 1 (dec available-procs)))
+
 ; pool of worker threads
-(def #^ExecutorService exec-service (Executors/newFixedThreadPool (max 1 available-procs)))
+(def #^ExecutorService exec-service (Executors/newFixedThreadPool num-threads))
 
 ; Latch to track till we are done
 (def latch (ref (CountDownLatch. 1)))
@@ -210,7 +213,9 @@
   (if (= 3 (datacentermap coords)) ; see if we are at the end
     (do
       (if (= ts (inc tr)) ; redundant check - make sure we passed through all the rooms and are really done
-        (swap! total-solutions inc)) ; if at the end, update the counter
+        (do
+          (swap! total-solutions inc)
+          (prn (format "Total Solutions so far: %d" @total-solutions)))) ; if at the end, update the counter
       (swap! numtasks dec)) ; we are at an end so decrement the number of running tasks
     (let [newmap  (assoc datacentermap coords 9) ; update the map to show where we walked already
           newcolcounts (assoc colcounts (first coords) (inc (colcounts (first coords))))
@@ -237,10 +242,14 @@
       (if (> (count paths) 1)
         ; pmap will not be effective here without throttling the size of the thread pool
         ;(dorun (map #(seek-end newmap % (inc ts) newcolcounts newrowcounts) (rest paths)))) ; kickoff new threads for other paths to leverage cores      
+
+        ; if we have more than one branch of this point, we may be kicking off new threads based on how many tasks
+        ; are running right now
         (doseq [path (rest paths)]
-          (do
             (swap! numtasks inc) ; increment our counter that keeps track of how many tasks are running
-            (.execute exec-service #(seek-end newmap path (inc ts) newcolcounts newrowcounts)))))
+            (if (<= @numtasks num-threads) ; this throttle is not quite right - numtasks is incremented whether we recur or not
+              (.execute exec-service #(seek-end newmap path (inc ts) newcolcounts newrowcounts)) ; add something to the executor service
+              (seek-end newmap path (inc ts) newcolcounts newrowcounts)))) ; stay in this thread to solve this branch
       (if (not (pos? (count paths)))
         (swap! numtasks dec) ; decrement our counter - we must be at an end state if we get to here
         (recur newmap (first paths) (inc ts) newcolcounts newrowcounts))) ; stay on this thread for the main path of execution
@@ -249,6 +258,9 @@
 
 (defn -main []
     ; validation: there should only be one 2 and one 3
+
+    ; we increment one on the threads here to include this current main thread
+    (prn (format "Seeking solutions to %d by %d grid using a pool of %d threads" w h num-threads))
 
     ; set up our CountDownLatch that will let us know when we are done
     (dosync (ref-set latch (CountDownLatch. 1)))
