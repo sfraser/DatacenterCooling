@@ -56,29 +56,76 @@
 ;  0 0 1 3))
 
 ; another larger one I use on the core i7 - it has 38 solutions
-(def w 5)
-(def h 5)
-(def datacenterinput '(
-  2 0 0 0 0
-  0 0 0 0 0
-  0 0 0 0 0
-  0 0 0 0 0
-  0 0 3 1 1))
+;(def w 5)
+;(def h 5)
+;(def datacenterinput '(
+;  2 0 0 0 0
+;  0 0 0 0 0
+;  0 0 0 0 0
+;  0 0 0 0 0
+;  0 0 3 1 1))
+
+; another larger one I use on the core i7 - it has 114 solutions
+;(def w 6)
+;(def h 6)
+;(def datacenterinput '(
+;  2 0 0 0 0 0
+;  0 0 0 0 0 0
+;  0 0 0 0 0 0
+;  0 0 0 0 0 0
+;  0 0 3 1 0 0
+;  0 0 0 0 0 0))
+
+; another larger one I use on the core i7 - it has ZERO solutions
+;(def w 6)
+;(def h 6)
+;(def datacenterinput '(
+;  2 0 0 0 0 0
+;  0 0 0 0 0 0
+;  0 0 0 0 0 0
+;  0 0 0 0 0 0
+;  0 0 0 0 0 0
+;  0 0 0 0 0 3))
+
+; another larger one I use on the core i7 - it has 10204 solutions
+;(def w 7)
+;(def h 6)
+;(def datacenterinput '(
+;  2 0 0 0 0 0 0
+;  0 0 0 0 0 0 0
+;  0 0 0 0 0 0 0
+;  0 0 0 0 0 0 0
+;  0 0 0 0 0 0 0
+;  0 0 0 0 0 0 3))
+
+; another larger one I use on the core i7 - it has 368 solutions
+;(def w 7)
+;(def h 6)
+;(def datacenterinput '(
+;  2 0 0 0 0 0 0
+;  0 0 0 0 0 0 0
+;  0 0 0 1 0 0 0
+;  0 0 0 1 0 0 0
+;  0 0 0 0 0 0 0
+;  0 0 0 0 0 0 3))
+
+
 
 ; Big example from quora website that they solve in C "in under 5 seconds on a 2.4GHz Pentium 4"!
 ; They note this 5 second time is their best case, and the coder should aim for 1-2 orders of magnitude
-; of that score.
-;(def w 7)
-;(def h 8)
-;(def datacenterinput '(
-;2 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;0 0 0 0 0 0 0
-;3 0 0 0 0 1 1))
+; of that score. At least over 70,000 solutions. My brute force method could not solve it in 7 HOURS
+; on 8 threads. Hmm....
+(def w 7)
+(def h 8)
+(def datacenterinput '(
+2 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+3 0 0 0 0 1 1))
 
 (defn findkey
   "Find the Value v in Map m and return the Key"
@@ -292,10 +339,10 @@
          ret# ~expr]
      (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
 
-(prn (format "Average = %f ms." (/ (reduce + (for [x (range 100)] (my-time (-main)))) 100 )))
+;(prn (format "Average = %f ms." (/ (reduce + (for [x (range 10)] (my-time (-main)))) 10 )))
 
 ;(for [x (range 100)] (-main))
 
-;(time (-main))
+(time (-main))
 
 
